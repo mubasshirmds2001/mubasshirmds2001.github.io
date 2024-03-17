@@ -1,0 +1,139 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(85deg, #f23164, #4c8ec2, #50004b);
+  background-size: 180% 180%;
+  animation: gradient-animation 18s ease infinite;
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+header {
+  background-color: #000260;
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+header h1 {
+  margin: 0;
+}
+
+header button {
+  background-color: #ea4c89;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+header button:hover,
+header button:focus {
+  background-color: #f082ac;
+}
+
+main {
+  max-width: 70vw;
+  margin: 20px auto;
+  padding: 20px;
+  background: linear-gradient(144deg, #ffffff, #cdf2ff, #acdeff);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+form {
+  display: grid;
+  gap: 20px;
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+select {
+  width: 5vw;
+  height: 4vh;
+  border-radius: 3px;
+  background-color: #ffffff;
+}
+
+.subject input,
+.total-marks input,
+.gained-marks input {
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.submit-button button {
+  background-color: #ea4c89;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.submit-button button:hover,
+button:focus {
+  background-color: #f082ac;
+}
+
+.subject {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+}
+
+input[type="number"] {
+  width: 20vw;
+  border-radius: 6px;
+  border: 1px solid #000260;
+}
+
+.submit-button {
+  display: flex;
+  justify-content: center;
+}
+
+@media screen and (max-width: 600px) {
+  header button {
+    max-width: 20vw;
+    max-height: 5vh;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  select {
+    width: 15vw;
+    border-radius: 6px;
+  }
+
+  label {
+    font-size: 1rem;
+  }
+
+  .subject input,
+  .total-marks input,
+  .gained-marks input {
+    width: 60%;
+    padding: 0.5rem;
+  }
+}

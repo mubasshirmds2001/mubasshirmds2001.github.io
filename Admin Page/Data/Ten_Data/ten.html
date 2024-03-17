@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Data - Class 10</title>
+  <link rel="stylesheet" href="../../../css/lkg.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-analytics.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js" type="module"></script>
+</head>
+
+<body>
+  <header>
+    <h1>Class 10 - Add Data</h1>
+    <button id="backButton">Back to Home</button>
+  </header>
+
+  <main>
+    <form id="academicDataForm">
+      <div class="academicDetails">
+        <h2 style="text-align: center">Add Academic Details</h2>
+        <div class="totStudCount">
+          <label for="totStud">Total Students:</label>
+          <input type="number" id="totStud" name="totStud" placeholder="Enter Student Count:" required />
+        </div>
+        <div class="totSubCount">
+          <label for="totSub">Total Subjects:</label>
+          <input type="number" id="totSub" name="totSub" placeholder="Enter Subject Count:" required />
+        </div>
+        <div class="submit-button-details" id="submit-button">
+          <button type="submit">Submit</button>
+        </div>
+      </div>
+    </form>
+
+    <form id="subjectDataForm">
+      <div class="subjectConatiner">
+        <div class="subContainer">
+          <div id="subjectInputs" class="subjectInputs"></div>
+        </div>
+        <div class="submit-button-subject" id="submit-button">
+          <button type="submit">Submit</button>
+        </div>
+      </div>
+    </form>
+
+    <form id="dataForm">
+      <div class="studentData">
+        <h2 style="text-align: center">Add Student Details</h2>
+        <div class="student-info">
+          <label for="studentSelect">Student RollNo:</label>
+          <select id="studentSelect" name="studentSelect" required></select>
+        </div>
+        <div class="name">
+          <label for="studName">Student Name:</label>
+          <input type="text" id="studName" name="studName" placeholder="Enter Student Name" required />
+        </div>
+        <div class="dob">
+          <label for="date_of_birth">Student DOB:</label>
+          <input type="date" id="date_of_birth" name="date_of_birth" placeholder="Enter DOB" required />
+        </div>
+
+        <div class="submit-button-data" id="submit-button">
+          <button type="submit">Submit</button>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <div id="loadingContainer">
+    <svg viewBox="0 0 240 240" class="pl" id="loadingAnim" style="display: none;">
+      <circle stroke-linecap="round" stroke-dashoffset="-330" stroke-dasharray="0 660" stroke-width="20" stroke="#000"
+        fill="none" r="105" cy="120" cx="120" class="pl__ring pl__ring--a"></circle>
+      <circle stroke-linecap="round" stroke-dashoffset="-110" stroke-dasharray="0 220" stroke-width="20" stroke="#000"
+        fill="none" r="35" cy="120" cx="120" class="pl__ring pl__ring--b"></circle>
+      <circle stroke-linecap="round" stroke-dasharray="0 440" stroke-width="20" stroke="#000" fill="none" r="70"
+        cy="120" cx="85" class="pl__ring pl__ring--c"></circle>
+      <circle stroke-linecap="round" stroke-dasharray="0 440" stroke-width="20" stroke="#000" fill="none" r="70"
+        cy="120" cx="155" class="pl__ring pl__ring--d"></circle>
+    </svg>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      set,
+      get,
+      push,
+    } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnnCZGyueCTm_nLCGQ5dr7yekTpzCgR-o",
+      authDomain: "academic-spotlight.firebaseapp.com",
+      projectId: "academic-spotlight",
+      storageBucket: "academic-spotlight.appspot.com",
+      messagingSenderId: "776884390504",
+      appId: "1:776884390504:web:8449d094dcb67dca1749dd",
+      measurementId: "G-9XXPLENZBH",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    function handleAcademicDataSubmission(event) {
+      event.preventDefault();
+
+      const studentCount = document.getElementById("totStud").value;
+      const subjectCount = document.getElementById("totSub").value;
+
+      // Validate input fields
+      if (studentCount && subjectCount) {
+        showLoadingAnimation();
+        pushAcademicData(studentCount, subjectCount);
+      } else {
+        alert(
+          "Please enter valid values for student count and subject count."
+        );
+      }
+    }
+
+    // Function to push academic data to Firebase
+    function pushAcademicData(studentCount, subjectCount) {
+      const academicDataRef = ref(database, "Marks/10/Ac_Details");
+
+      set(academicDataRef, {
+        StudentCount: studentCount,
+        SubjectCount: subjectCount,
+      })
+        .then(() => {
+          alert("Academic data added successfully.");
+          hideLoadingAnimation();
+          location.reload();
+        })
+        .catch((error) => {
+          alert("Error pushing academic data: " + error.message);
+          hideLoadingAnimation();
+        });
+
+    }
+
+    // Function to handle form submission for student data
+    function handleStudentDataSubmission(event) {
+      event.preventDefault();
+
+      const selectedRollNo = document.getElementById("studentSelect").value;
+      const selectedName = document.getElementById("studName").value;
+      const selectedDob = document.getElementById("date_of_birth").value;
+
+      // Validate input fields
+      if (selectedRollNo && selectedName && selectedDob) {
+        showLoadingAnimation();
+        pushStudentData(selectedRollNo, selectedName, selectedDob);
+      } else {
+        alert(
+          "Please enter valid values for roll number, name, and date of birth."
+        );
+      }
+    }
+
+    // Function to push student data to Firebase
+    function pushStudentData(rollNo, name, dob) {
+      const studentDataRef = ref(database, `Marks/10/${rollNo}/Data`);
+
+      set(studentDataRef, {
+        name: name,
+        dob: dob,
+      })
+        .then(() => {
+          alert("Student data added successfully.");
+          hideLoadingAnimation();
+        })
+        .catch((error) => {
+          alert("Error pushing student data: " + error.message);
+          hideLoadingAnimation();
+        });
+    }
+
+    // Function to retrieve data from Firebase for selected roll number
+    function retrieveDataFromFirebase(rollNo) {
+      const studentDataRef = ref(database, `Marks/10/${rollNo}/Data`);
+
+      get(studentDataRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const studData = snapshot.val();
+            document.getElementById("studName").value = studData.name;
+            document.getElementById("date_of_birth").value = studData.dob;
+          } else {
+            clearTextBoxes();
+          }
+        })
+        .catch((error) => {
+          console.error("Error retrieving data:", error);
+          alert("Error retrieving data. Please try again later.");
+        });
+    }
+
+    // Function to clear text boxes
+    function clearTextBoxes() {
+      document.getElementById("studName").value = "";
+      document.getElementById("date_of_birth").value = "";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+      const token = localStorage.getItem('authToken');
+
+      const isLoginPage = window.location.pathname.includes('index.html');
+      const isHomePage = window.location.pathname.includes('ten.html');
+
+      if (!token && !isLoginPage) {
+        // Token does not exist and not on the login page, redirect to login page
+        window.location.href = "/Admin%20Page/Login/index.html"; // Change the URL to your login page
+      } else if (token && !isHomePage) {
+        // Token exists and not on the home page, redirect to home page
+        window.location.href = "/Admin%20Page/Data/Ten_Data/ten.html";
+      }
+
+      checkAcademicData();
+      retreiveSubjectData();
+    });
+
+    function checkAcademicData() {
+      const acDetailsRef = ref(database, "Marks/10/Ac_Details");
+      showLoadingAnimation();
+
+      get(acDetailsRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const acData = snapshot.val();
+            const totStudCount = (document.getElementById("totStud").value =
+              acData.StudentCount);
+            const totSubCount = (document.getElementById("totSub").value =
+              acData.SubjectCount);
+
+            document.getElementById("subjectDataForm").style.display = "block";
+            const subjectInputsContainer = document.getElementById('subjectInputs');
+            for (let i = 0; i < totSubCount; i++) {
+              const label = document.createElement('label');
+              label.textContent = `Subject ${i + 1}: `;
+
+              const input = document.createElement('input');
+              input.type = 'text';
+              input.name = `subject${i + 1}`;
+
+              subjectInputsContainer.appendChild(label);
+              subjectInputsContainer.appendChild(input);
+              subjectInputsContainer.appendChild(document.createElement('br'));
+            }
+
+            var selectElement = document.getElementById("studentSelect");
+            selectElement.innerHTML = "";
+            for (var i = 1; i <= totStudCount; i++) {
+              var option = document.createElement("option");
+              option.value = i;
+              option.textContent = ("0" + i).slice(-2);
+              selectElement.appendChild(option);
+            }
+
+            const selectedRollNo = document.getElementById("studentSelect").value;
+            retrieveDataFromFirebase(selectedRollNo);
+            hideLoadingAnimation();
+          }
+        })
+        .catch((error) => {
+          console.error("Error retrieving academic data:", error);
+          alert("Error retrieving academic data. Please try again later.");
+        });
+    }
+
+    function retreiveSubjectData() {
+      const dataRef = ref(database, "Marks/10/SubjectData");
+
+      get(dataRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const subjectsData = snapshot.val();
+            for (const key in subjectsData) {
+              if (subjectsData.hasOwnProperty(key)) {
+                const subjectInput = document.getElementsByName(key)[0];
+                if (subjectInput) {
+                  subjectInput.value = subjectsData[key];
+                }
+              }
+            }
+          } else {
+            alert("No subjects data available.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error retrieving subjects data:", error);
+          alert("Error retrieving subjects data. Please try again later.");
+        });
+
+    }
+
+    document
+      .getElementById("subjectDataForm")
+      .addEventListener("submit", function () {
+        event.preventDefault();
+
+        const studentCount = document.getElementById("totStud").value;
+        const subjectCount = document.getElementById("totSub").value;
+
+        // Validate input fields
+        if (studentCount && subjectCount) {
+          showLoadingAnimation();
+
+          const subjectsData = [];
+          for (let i = 0; i < subjectCount; i++) {
+            const subjectInput = document.getElementsByName(`subject${i + 1}`)[0];
+            const subjectName = subjectInput.value;
+            subjectsData[`subject${i + 1}`] = subjectName;
+          }
+
+          pushSubjectData(subjectsData);
+        } else {
+          alert("Please enter valid values for student count and subject count.");
+        }
+      });
+
+    function pushSubjectData(subjectData) {
+      const subjectDataRef = ref(database, "Marks/10/SubjectData");
+
+      set(subjectDataRef, subjectData)
+        .then(() => {
+          alert("Subject data added successfully.");
+          hideLoadingAnimation();
+          // Optionally, perform any additional actions upon successful data push
+        })
+        .catch((error) => {
+          console.error("Error pushing subject data:", error);
+          alert("Error pushing subject data. Please try again later.");
+        });
+    }
+
+    document
+      .getElementById("studentSelect")
+      .addEventListener("change", function () {
+        const selectedRollNo = document.getElementById("studentSelect").value;
+        retrieveDataFromFirebase(selectedRollNo);
+      });
+
+    document
+      .getElementById("academicDataForm")
+      .addEventListener("submit", handleAcademicDataSubmission);
+    document
+      .getElementById("dataForm")
+      .addEventListener("submit", handleStudentDataSubmission);
+
+    document
+      .getElementById("backButton")
+      .addEventListener("click", function () {
+        // Redirect to the home page
+        window.location.href = "/Admin%20Page/Home/add_details/details.html";
+      });
+
+    function showLoadingAnimation() {
+      document.getElementById("loadingAnim").style.display = "block";
+    }
+
+    function hideLoadingAnimation() {
+      document.getElementById("loadingAnim").style.display = "none";
+    }
+  </script>
+</body>
+
+</html>

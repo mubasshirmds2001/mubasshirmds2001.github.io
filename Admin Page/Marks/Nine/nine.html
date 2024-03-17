@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Marks - Class 9</title>
+  <link rel="stylesheet" href="../../../css/marks.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-analytics.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js" type="module"></script>
+</head>
+
+<body>
+  <header>
+    <h1>Class 9 - Add Marks</h1>
+    <button id="backButton">Back to Home</button>
+  </header>
+
+  <main>
+    <form id="marksForm">
+      <div class="student-info">
+        <label for="studentSelect">Student RollNo:</label>
+        <select id="studentSelect" name="studentSelect" required></select>
+      </div>
+
+      <div class="name">
+        <label for="studName">Student Name:</label>
+        <input type="text" id="studName" name="studName" placeholder="Enter Student Name" required />
+      </div>
+
+      <div class="subject">
+        <label for="totalMax">Total Maximum Marks:</label>
+        <input type="number" id="totalMax" name="totalMax" placeholder="Total Max Marks" disabled />
+      </div>
+
+      <div class="subject">
+        <label for="totalObt">Total Obtained Marks:</label>
+        <input type="number" id="totalObt" name="totalObt" placeholder="Total Obtained Marks" disabled />
+      </div>
+
+      <div class="submit-button">
+        <button type="submit">Submit</button>
+      </div>
+    </form>
+  </main>
+
+  <div id="loadingContainer">
+    <svg viewBox="0 0 240 240" class="pl" id="loadingAnim" style="display: none;">
+      <circle stroke-linecap="round" stroke-dashoffset="-330" stroke-dasharray="0 660" stroke-width="20" stroke="#000"
+        fill="none" r="105" cy="120" cx="120" class="pl__ring pl__ring--a"></circle>
+      <circle stroke-linecap="round" stroke-dashoffset="-110" stroke-dasharray="0 220" stroke-width="20" stroke="#000"
+        fill="none" r="35" cy="120" cx="120" class="pl__ring pl__ring--b"></circle>
+      <circle stroke-linecap="round" stroke-dasharray="0 440" stroke-width="20" stroke="#000" fill="none" r="70"
+        cy="120" cx="85" class="pl__ring pl__ring--c"></circle>
+      <circle stroke-linecap="round" stroke-dasharray="0 440" stroke-width="20" stroke="#000" fill="none" r="70"
+        cy="120" cx="155" class="pl__ring pl__ring--d"></circle>
+    </svg>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      set,
+      get,
+      push,
+    } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnnCZGyueCTm_nLCGQ5dr7yekTpzCgR-o",
+      authDomain: "academic-spotlight.firebaseapp.com",
+      projectId: "academic-spotlight",
+      storageBucket: "academic-spotlight.appspot.com",
+      messagingSenderId: "776884390504",
+      appId: "1:776884390504:web:8449d094dcb67dca1749dd",
+      measurementId: "G-9XXPLENZBH",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    function showLoadingAnimation() {
+      document.getElementById("loadingAnim").style.display = "block";
+    }
+
+    function hideLoadingAnimation() {
+      document.getElementById("loadingAnim").style.display = "none";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+      const token = localStorage.getItem('authToken');
+
+      const isLoginPage = window.location.pathname.includes('index.html');
+      const isHomePage = window.location.pathname.includes('nine.html');
+
+      if (!token && !isLoginPage) {
+        // Token does not exist and not on the login page, redirect to login page
+        window.location.href = "/Admin%20Page/Login/index.html"; // Change the URL to your login page
+      } else if (token && !isHomePage) {
+        // Token exists and not on the home page, redirect to home page
+        window.location.href = "/Admin%20Page/Marks/Nine/nine.html";
+      }
+
+      showLoadingAnimation();
+      const selectedRollNo = document.getElementById("studentSelect").value;
+      const studentSelect = document.getElementById("studentSelect");
+
+      // Create an empty option element
+      const emptyOption = document.createElement("option");
+      emptyOption.value = "";
+      emptyOption.textContent = ""; // You can set the text content if needed
+
+      // Insert the empty option as the first child of the select element
+      studentSelect.insertBefore(emptyOption, selectedRollNo.firstChild);
+
+      // Set the roll number select to empty
+      studentSelect.value = "";
+      alert('Please select Roll Number')
+      getRollNumbers();
+      fetchSubjectData();
+
+
+      if (selectedRollNo) {
+        retrieveMarksDataFromFirebase(selectedRollNo);
+      }
+    });
+
+    document
+      .getElementById("studentSelect")
+      .addEventListener("change", function (event) {
+        const selectedRollNo = this.value;
+
+        retrieveMarksDataFromFirebase(selectedRollNo);
+        retrieveStudNameFromFirebase(selectedRollNo);
+      });
+
+    function retrieveStudNameFromFirebase(rollNo) {
+      const studentDataRef = ref(database, `Marks/9/${rollNo}/Data`);
+
+      get(studentDataRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const studData = snapshot.val();
+            document.getElementById("studName").value = studData.name;
+          } else {
+            clearTextBoxes();
+          }
+        })
+        .catch((error) => {
+          console.error("Error retrieving data:", error);
+          alert("Error retrieving data. Please try again later.");
+        });
+    }
+
+    document
+      .getElementById("marksForm")
+      .addEventListener("submit", function (event) {
+        event.preventDefault()
+
+        // Push data to Firebase
+        pushDataToFirebase();
+
+      });
+
+    function pushDataToFirebase() {
+      const selectedRollNo = document.getElementById("studentSelect").value;
+
+      // Reference to the subject data in Firebase
+      const subjectDataRef = ref(database, "Marks/9/SubjectData");
+
+      // Fetch subject data from Firebase
+      get(subjectDataRef).then((subjectDataSnapshot) => {
+        if (subjectDataSnapshot.exists()) {
+          const subjectData = subjectDataSnapshot.val();
+          const subjectNames = Object.values(subjectData);
+
+          let maxMarks = {};
+          let obtMarks = {};
+          let totalMaxMarks = 0;
+          let totalObtMarks = 0;
+          let error = false;
+
+          // Loop through each subject name and assign marks to the respective objects dynamically
+          subjectNames.forEach((subjectName, index) => {
+            const maxMarksValue = parseFloat(document.getElementById(`subject${index + 1}Max`).value);
+            const obtainedMarksValue = parseFloat(document.getElementById(`subject${index + 1}Obtained`).value);
+
+            // Validate obtained marks
+            if (obtainedMarksValue > maxMarksValue) {
+              alert(`Obtained marks for ${subjectName} cannot be greater than max marks.`);
+              error = true; // Set error flag
+              return; // Exit the loop
+            }
+
+            // Assign marks to the respective objects dynamically with subject names as keys
+            maxMarks[subjectName] = maxMarksValue;
+            obtMarks[subjectName] = obtainedMarksValue;
+
+            totalMaxMarks += maxMarksValue;
+            totalObtMarks += obtainedMarksValue;
+          });
+
+          maxMarks["Total"] = totalMaxMarks;
+          obtMarks["Total"] = totalObtMarks;
+
+          if (!error) { // Proceed only if there's no error
+            maxMarks["Total"] = totalMaxMarks;
+            obtMarks["Total"] = totalObtMarks;
+
+            // Set max marks data
+            const maxMarksRef = ref(database, `Marks/9/${selectedRollNo}/MaxMarks`);
+            set(maxMarksRef, maxMarks)
+              .then(() => {
+                console.log("Max marks added successfully.");
+              })
+              .catch((error) => {
+                console.error("Error adding max marks:", error);
+                alert("Error adding max marks. Please try again later.");
+              });
+
+            // Set obtained marks data
+            const obtMarksRef = ref(database, `Marks/9/${selectedRollNo}/ObtMarks`);
+            set(obtMarksRef, obtMarks)
+              .then(() => {
+                console.log("Obtained marks added successfully.");
+                alert('Marks added successfully');
+              })
+              .catch((error) => {
+                console.error("Error adding obtained marks:", error);
+                alert("Error adding obtained marks. Please try again later.");
+              });
+          }
+        } else {
+          console.error("Subject data not found in Firebase.");
+          alert("Subject data not found in Firebase. Please try again later.");
+        }
+      })
+        .catch((error) => {
+          console.error("Error fetching subject data from Firebase:", error.message);
+          alert("Error fetching subject data from Firebase. Please try again later.");
+        });
+    }
+
+    function fetchSubjectData() {
+      const subjectCountRef = ref(database, "Marks/9/Ac_Details");
+
+      get(subjectCountRef).then((subjectCountSnapshot) => {
+        if (subjectCountSnapshot.exists()) {
+          // Extracting SubjectCount value from the Ac_Details node
+          const acDetailsData = subjectCountSnapshot.val();
+          const subjectCount = acDetailsData.SubjectCount;
+
+          // Now we fetch subject data
+          const subjectDataRef = ref(database, "Marks/9/SubjectData");
+
+          get(subjectDataRef).then((subjectDataSnapshot) => {
+            if (subjectDataSnapshot.exists()) {
+              const subjectData = subjectDataSnapshot.val();
+              createInputBoxes(subjectCount, subjectData);
+            } else {
+              console.error("Subject data not found in Firebase.");
+            }
+          }).catch((error) => {
+            console.error("Error fetching subject data from Firebase:", error.message);
+          });
+        } else {
+          console.error("Subject count data not found in Firebase.");
+        }
+      }).catch((error) => {
+        console.error("Error fetching subject count data from Firebase:", error.message);
+      });
+    }
+
+
+    function createInputBoxes(subjectCount, subjectData) {
+      const form = document.getElementById('marksForm');
+      const submitButton = form.querySelector('.submit-button');
+
+      for (let i = 1; i <= subjectCount; i++) {
+        const subjectLabel = subjectData[`subject${i}`];
+
+        const subjectDiv = document.createElement('div'); // Create a div for each subject
+        subjectDiv.classList.add('subject');
+
+        const label = document.createElement('label');
+        label.textContent = `${subjectLabel}:`;
+        label.style.display = 'flex';
+        label.style.justifyContent = 'center';
+
+        const maxInput = document.createElement('input');
+        maxInput.setAttribute('type', 'number');
+        maxInput.setAttribute('id', `subject${i}Max`);
+        maxInput.setAttribute('name', `subject${i}Max`);
+        maxInput.setAttribute('placeholder', 'Max Marks');
+        maxInput.setAttribute('required', '');
+
+        const obtainedInput = document.createElement('input');
+        obtainedInput.setAttribute('type', 'number');
+        obtainedInput.setAttribute('id', `subject${i}Obtained`);
+        obtainedInput.setAttribute('name', `subject${i}Obtained`);
+        obtainedInput.setAttribute('placeholder', 'Obtained Marks');
+        obtainedInput.setAttribute('required', '');
+
+        subjectDiv.appendChild(label);
+        subjectDiv.appendChild(maxInput);
+        subjectDiv.appendChild(obtainedInput);
+
+        form.insertBefore(subjectDiv, submitButton);
+      }
+      const totalMax = form.querySelector('#totalMax');
+      const totalObt = form.querySelector('#totalObt');
+
+      form.insertBefore(totalMax.parentElement, submitButton); // Move totalMax parent div before the submit button
+      form.insertBefore(totalObt.parentElement, submitButton);
+    }
+
+
+    function retrieveMarksDataFromFirebase(rollNo) {
+      showLoadingAnimation();
+
+      const subjectDataRef = ref(database, "Marks/9/SubjectData");
+
+      // Fetch subject data from Firebase to get subject names in the correct order
+      get(subjectDataRef).then((subjectDataSnapshot) => {
+        if (subjectDataSnapshot.exists()) {
+          const subjectData = subjectDataSnapshot.val();
+          const subjectNames = Object.values(subjectData);
+
+          // Reference to the maximum marks and obtained marks data in Firebase for the specified roll number
+          const maxMarksRef = ref(database, `Marks/9/${rollNo}/MaxMarks`);
+          const obtMarksRef = ref(database, `Marks/9/${rollNo}/ObtMarks`);
+
+          Promise.all([get(maxMarksRef), get(obtMarksRef)])
+            .then((snapshots) => {
+              const maxMarksSnapshot = snapshots[0];
+              const obtMarksSnapshot = snapshots[1];
+
+              if (maxMarksSnapshot.exists() && obtMarksSnapshot.exists()) {
+                const maxMarksData = maxMarksSnapshot.val();
+                const obtMarksData = obtMarksSnapshot.val();
+                console.log(maxMarksData);
+                console.log(obtMarksData);
+
+                // Update input fields with retrieved marks data, matching subject order
+                updateInputFields(subjectNames, maxMarksData, "Max");
+                updateInputFields(subjectNames, obtMarksData, "Obtained");
+
+                hideLoadingAnimation();
+              } else {
+                clearInputFields("Max");
+                clearInputFields("Obtained");
+                hideLoadingAnimation();
+                console.error("Marks data not found for the selected roll number.");
+                alert("Marks data not found for the selected roll number.");
+              }
+            })
+            .catch((error) => {
+              hideLoadingAnimation();
+              console.error("Error retrieving marks data:", error);
+              alert("Error retrieving marks data. Please try again later.");
+            });
+        } else {
+          console.error("Subject data not found in Firebase.");
+          alert("Subject data not found in Firebase. Please try again later.");
+          hideLoadingAnimation();
+        }
+      }).catch((error) => {
+        console.error("Error fetching subject data from Firebase:", error.message);
+        alert("Error fetching subject data from Firebase. Please try again later.");
+        hideLoadingAnimation();
+      });
+    }
+
+    function updateInputFields(subjectNames, marksData, prefix) {
+      subjectNames.forEach((subjectName, index) => {
+        const inputField = document.getElementById(`subject${index + 1}${prefix}`);
+        if (inputField) {
+          inputField.value = marksData[subjectName] || "";
+        }
+      });
+
+      const totalField = document.getElementById(`total${prefix}`);
+      if (totalField) {
+        totalField.value = marksData["Total"] || "";
+      }
+
+      // Update totalObt input field if prefix is "Obtained"
+      if (prefix === "Obtained") {
+        const totalObtInput = document.getElementById("totalObt");
+        if (totalObtInput) {
+          totalObtInput.value = marksData["Total"] || "";
+        }
+      }
+    }
+
+
+    function clearInputFields(prefix) {
+      for (let i = 1; i <= 6; i++) {
+        const inputField = document.getElementById(`subject${i}${prefix}`);
+        if (inputField) {
+          inputField.value = "";
+        }
+      }
+      const totalField = document.getElementById(`total${prefix}`);
+      if (totalField) {
+        totalField.value = "";
+      }
+    }
+
+
+    document
+      .getElementById("backButton")
+      .addEventListener("click", function () {
+        // Redirect to the home page
+        window.location.href = "/Admin%20Page/Home/add_marks/marks_home.html";
+      });
+
+    function getRollNumbers() {
+      const acDetailsRef = ref(database, "Marks/9/Ac_Details");
+
+      get(acDetailsRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const acDetails = snapshot.val();
+            if (acDetails && acDetails.StudentCount) {
+              const studentCount = parseInt(acDetails.StudentCount);
+              if (!isNaN(studentCount)) {
+                // Generate roll numbers based on student count
+                generateRollNumbers(studentCount);
+                hideLoadingAnimation();
+              } else {
+                console.log("Invalid student count:", acDetails.StudentCount);
+              }
+            } else {
+              console.log("Student count not available.");
+            }
+          } else {
+            console.log("Ac_Details not available.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error retrieving Ac_Details:", error);
+          alert("Error retrieving Ac_Details. Please try again later.");
+        });
+    }
+
+    function generateRollNumbers(studentCount) {
+      const rollNumberSelect = document.getElementById("studentSelect");
+      for (let i = 1; i <= studentCount; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = i;
+        rollNumberSelect.appendChild(option);
+      }
+    }
+  </script>
+</body>
+
+</html>

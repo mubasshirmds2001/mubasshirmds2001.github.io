@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Image Upload</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 1rem;
+            color: #fbd17e;
+        }
+
+        form {
+            max-width: 500px;
+            margin: 4rem auto;
+            padding: 20px;
+            color: #fbd17e;
+            border-radius: 5px;
+            background: rgb(12, 45, 60);
+            box-shadow: 1px 20px 20px 0px rgba(0, 0, 0, 0.1);
+            /* box-shadow: 0px 187px 75px rgba(0, 0, 0, 0.1), 0px 105px 63px rgba(0, 0, 0, 0.05), 0px 47px 47px rgba(0, 0, 0, 0.1), 0px 12px 26px rgba(0, 0, 0, 0.1), 0px 0px 0px rgba(0, 0, 0, 0.1); */
+            border-radius: 16px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="file"] {
+            margin: 10px 0;
+            margin-top: 1rem;
+        }
+
+        input[type="button"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="button"]:hover {
+            background-color: #45a049;
+        }
+
+        #progress {
+            width: 100%;
+            height: 20px;
+            margin-top: 10px;
+        }
+
+        header {
+            background-color: #000260;
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        header button {
+            background-color: #ea4c89;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        header button:hover,
+        header button:focus {
+            background-color: #f082ac;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+</head>
+
+<body>
+    <header>
+        <h1>Upload Photo</h1>
+        <button id="backButton">Back to Home</button>
+    </header>
+    <form>
+        <label for="files">Choose an Image:</label><br>
+        <input type="file" id="files" /><br /><br />
+        <input type="button" id="send" value="Upload File">
+        <p id="uploading"></p>
+        <progress value="0" max="100" id="progress"></progress>
+    </form>
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.13.1/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/7.13.1/firebase-storage.js"></script>
+
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyCnnCZGyueCTm_nLCGQ5dr7yekTpzCgR-o",
+            authDomain: "academic-spotlight.firebaseapp.com",
+            projectId: "academic-spotlight",
+            storageBucket: "academic-spotlight.appspot.com",
+            messagingSenderId: "776884390504",
+            appId: "1:776884390504:web:8449d094dcb67dca1749dd",
+            measurementId: "G-9XXPLENZBH",
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        var files = [];
+        var progress = document.getElementById("progress");
+        progress.style.display = "none";
+        document.getElementById("files").addEventListener("change", function (e) {
+            files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                console.log(files[i]);
+            }
+        });
+
+        document.getElementById("send").addEventListener("click", function () {
+            // Check if files are selected
+            if (files.length !== 0) {
+                // Loop through all the selected files
+                for (let i = 0; i < files.length; i++) {
+                    // Generate a unique filename
+                    var filename = `file_${Date.now()}_${files[i].name}`;
+
+                    // Create a storage reference
+                    var storageRef = firebase.storage().ref(filename);
+
+                    // Upload file
+                    var uploadTask = storageRef.put(files[i]);
+
+                    // Update progress bar
+                    uploadTask.on(
+                        "state_changed",
+                        function (snapshot) {
+                            var percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            progress.style.display = "block";
+                            progress.value = percentage;
+                        },
+                        function (error) {
+                            console.error("Error uploading file:", error);
+                            alert("Error uploading file: " + error.message);
+                        },
+                        function () {
+
+                            alert("File uploaded successfully");
+                            progress.style.display = "none";
+                            document.getElementById("uploading").innerHTML += `${files[i].name} uploaded <br />`;
+                            getFileUrl(filename); // Retrieve download URL
+                            setTimeout(function () {
+                                location.reload();
+                            }, 2000);
+                        }
+                    );
+                }
+            } else {
+                alert("No file chosen");
+            }
+        });
+
+        function getFileUrl(filename) {
+            var storageRef = firebase.storage().ref(filename);
+            storageRef
+                .getDownloadURL()
+                .then(function (url) {
+                    console.log("Download URL:", url);
+                })
+                .catch(function (error) {
+                    console.error("Error getting download URL:", error);
+                });
+        }
+
+        document
+            .getElementById("backButton")
+            .addEventListener("click", function () {
+                // Redirect to the home page
+                window.location.href = "/Admin%20Page/Home/home.html";
+            });
+    </script>
+</body>
+
+</html>
