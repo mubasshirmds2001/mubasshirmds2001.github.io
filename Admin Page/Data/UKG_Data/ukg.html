@@ -210,14 +210,14 @@
       const token = localStorage.getItem('authToken');
 
       const isLoginPage = window.location.pathname.includes('index.html');
-      const isHomePage = window.location.pathname.includes('UKG.html');
+      const isHomePage = window.location.pathname.includes('ukg.html');
 
       if (!token && !isLoginPage) {
         // Token does not exist and not on the login page, redirect to login page
         window.location.href = "/Admin%20Page/Login/index.html"; // Change the URL to your login page
       } else if (token && !isHomePage) {
         // Token exists and not on the home page, redirect to home page
-        window.location.href = "/Admin%20Page/Data/UKG_Data/UKG.html";
+        window.location.href = "/Admin%20Page/Data/UKG_Data/ukg.html";
       }
 
       checkAcademicData();
